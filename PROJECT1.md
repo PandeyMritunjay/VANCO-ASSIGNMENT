@@ -3,6 +3,8 @@
 **Competition:** Kaggle — Store Sales Time Series Forecasting
 **Metric:** RMSLE (Root Mean Squared Logarithmic Error)
 **Leaderboard Rank:** #765
+<img width="1087" height="154" alt="image" src="https://github.com/user-attachments/assets/adf7b5e7-601c-4274-bd2a-87fbcffecc86" />
+
 **Validation RMSLE:** 0.3853
 
 ##  ML Pipeline Architecture
