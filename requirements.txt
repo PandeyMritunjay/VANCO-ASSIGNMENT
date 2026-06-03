@@ -1,0 +1,35 @@
+# Core dependencies
+langchain
+langchain-community
+langchain-openai
+openai
+
+# PDF processing
+pypdf
+pdfplumber
+
+# Vector database
+chromadb
+sentence-transformers
+torchvision
+
+# Graph database
+neo4j
+
+# Keyword search
+rank-bm25
+
+# Web framework
+fastapi==0.109.0
+uvicorn==0.27.0
+pydantic==2.5.3
+python-multipart==0.0.6
+
+# Frontend
+jinja2
+aiofiles
+streamlit
+
+# Utilities
+python-dotenv
+tiktoken
