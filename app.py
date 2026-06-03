@@ -5,7 +5,7 @@ from PIL import Image
 import time
 from ultralytics import YOLO
 
-st.set_page_config(page_title="ASL Detection", page_icon="??", layout="wide")
+st.set_page_config(page_title="ASL Detection", page_icon="??", layout="centered")
 
 st.markdown('<h1 style="text-align:center;color:#1f77b4;font-size:3rem;font-weight:bold;">?? ASL Detection System</h1>', unsafe_allow_html=True)
 st.markdown("---")
@@ -52,7 +52,7 @@ if input_method == "Upload Image":
     if uploaded_file:
         image = Image.open(uploaded_file)
         st.subheader("Original Image")
-        st.image(image, width=640)
+        st.image(image, use_column_width=True)
         
         with st.spinner("Processing..."):
             start_time = time.time()
@@ -60,7 +60,7 @@ if input_method == "Upload Image":
             inference_time = (time.time() - start_time) * 1000
         
         st.subheader("Detection Result")
-        st.image(processed_img, width=640)
+        st.image(processed_img, use_column_width=True)
         
         for result in results:
             if len(result.boxes) > 0:
@@ -133,3 +133,4 @@ else:
                     break
             
             cap.release()
+
