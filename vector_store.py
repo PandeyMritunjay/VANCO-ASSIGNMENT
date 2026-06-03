@@ -11,6 +11,13 @@ import numpy as np
 
 from chunking import Chunk
 
+# Set Hugging Face cache to local directory
+HF_CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "hf_cache")
+os.makedirs(HF_CACHE_DIR, exist_ok=True)
+os.environ['HF_HOME'] = HF_CACHE_DIR
+os.environ['TRANSFORMERS_CACHE'] = HF_CACHE_DIR
+os.environ['HF_HUB_CACHE'] = HF_CACHE_DIR
+
 
 class VectorStore:
     """
@@ -28,8 +35,24 @@ class VectorStore:
         self.collection_name = collection_name
         self.embedding_model_name = embedding_model
         
-        # Initialize embedding model
-        self.embedding_model = SentenceTransformer(embedding_model)
+        # Initialize embedding model with local cache and error handling
+        cache_dir = os.path.join(os.path.dirname(persist_directory), "model_cache")
+        os.makedirs(cache_dir, exist_ok=True)
+        
+        try:
+            self.embedding_model = SentenceTransformer(
+                embedding_model,
+                cache_folder=cache_dir
+            )
+        except Exception as e:
+            # If download fails, try again with a different approach
+            print(f"Error loading model: {e}. Retrying...")
+            import time
+            time.sleep(2)
+            self.embedding_model = SentenceTransformer(
+                embedding_model,
+                cache_folder=cache_dir
+            )
         
         # Initialize ChromaDB
         os.makedirs(persist_directory, exist_ok=True)

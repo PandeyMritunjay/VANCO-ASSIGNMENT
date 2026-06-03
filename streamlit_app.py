@@ -16,8 +16,12 @@ from retrieval import create_hybrid_retriever
 from generator import create_answer_generator
 from graph_store import create_graph_store
 
-# Load environment variables
-load_dotenv()
+# Get script directory for relative paths (must be before load_dotenv)
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Load environment variables from script directory
+env_path = os.path.join(SCRIPT_DIR, '.env')
+load_dotenv(env_path)
 
 # Page configuration
 st.set_page_config(
@@ -29,13 +33,34 @@ st.set_page_config(
 # Initialize session state
 if 'vector_store' not in st.session_state:
     with st.spinner("Loading vector store..."):
+        chroma_path = os.path.join(SCRIPT_DIR, os.getenv("CHROMA_PERSIST_DIRECTORY", "chroma_db").lstrip("./"))
         st.session_state.vector_store = create_vector_store(
-            persist_directory=os.getenv("CHROMA_PERSIST_DIRECTORY", "./chroma_db")
+            persist_directory=chroma_path
         )
+        # Debug: check if chroma_db loaded correctly
+        stats = st.session_state.vector_store.get_stats()
+        st.sidebar.write(f"Vector Store: {stats['total_chunks']} chunks")
+        st.sidebar.write(f"Path: {chroma_path}")
 
 if 'keyword_search' not in st.session_state:
     with st.spinner("Loading keyword search..."):
         st.session_state.keyword_search = create_keyword_search()
+        # Index documents from vector store for keyword search
+        if 'vector_store' in st.session_state:
+            vector_store = st.session_state.vector_store
+            collection = vector_store.collection
+            count = collection.count()
+            st.sidebar.write(f"ChromaDB count: {count}")
+            if count > 0:
+                # Get all documents from chroma_db
+                all_data = collection.get()
+                documents = all_data['documents']
+                metadatas = all_data['metadatas']
+                st.sidebar.write(f"Documents loaded: {len(documents)}")
+                # Index in keyword search
+                st.session_state.keyword_search.index_documents(documents, metadatas)
+                kw_stats = st.session_state.keyword_search.get_stats()
+                st.sidebar.write(f"Keyword Search: {kw_stats['total_documents']} docs, indexed: {kw_stats['indexed']}")
 
 if 'graph_store' not in st.session_state:
     try:
@@ -131,6 +156,10 @@ if prompt := st.chat_input("Ask a question about NCERT Physics..."):
                 use_keyword=True,
                 use_graph=use_graph
             )
+            # Debug: log retrieval results
+            st.sidebar.write(f"Retrieval results: {len(results.get('combined_results', []))} items")
+            if results.get('combined_results'):
+                st.sidebar.write(f"First result text preview: {results['combined_results'][0].get('text', '')[:100]}...")
             
             # Generate answer with conversation context
             try:
