@@ -1,4 +1,4 @@
-# RAG Application - Architecture & Limitations
+# Project 3: - RAG Application - Architecture & Limitations
 
  LInk: https://vanco-assignment-29.streamlit.app/
 ## Architecture Diagram
