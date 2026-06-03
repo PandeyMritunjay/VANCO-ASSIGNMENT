@@ -1,6 +1,6 @@
 # ASL Detection - Streamlit Deployment
 
-Live ASL detection web application deployed on Streamlit.
+Live ASL detection web application deployed on Streamlit: https://pandeymritunjay-vanco-assignment-app-opencv-adg7xb.streamlit.app/
 
 ## Features
 
