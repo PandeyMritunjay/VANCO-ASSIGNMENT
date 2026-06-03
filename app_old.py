@@ -1,12 +1,12 @@
 """
 ASL Detection Streamlit App
 Live webcam demo for American Sign Language detection using YOLOv8
-No cv2 dependency for Streamlit Cloud compatibility
 """
 
 import streamlit as st
+import cv2
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 import time
 from ultralytics import YOLO
 
@@ -53,12 +53,11 @@ def process_image(image, model):
     # Convert PIL to numpy array
     img_array = np.array(image)
     
-    # Run inference (YOLO accepts RGB numpy arrays)
-    results = model(img_array, conf=0.5, verbose=False)
+    # Convert RGB to BGR for OpenCV
+    img_bgr = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
     
-    # Create a copy for drawing
-    img_pil = image.copy()
-    draw = ImageDraw.Draw(img_pil)
+    # Run inference
+    results = model(img_bgr, conf=0.5, verbose=False)
     
     # Draw detections
     for result in results:
@@ -73,29 +72,20 @@ def process_image(image, model):
             class_name = model.names[class_id]
             
             # Draw bounding box
-            draw.rectangle([(x1, y1), (x2, y2)], outline=(0, 255, 0), width=3)
+            cv2.rectangle(img_bgr, (x1, y1), (x2, y2), (0, 255, 0), 2)
             
             # Draw label
             label = f"{class_name}: {confidence:.2f}"
-            # Try to use a default font
-            try:
-                font = ImageFont.truetype("arial.ttf", 20)
-            except:
-                font = ImageFont.load_default()
-            
-            # Get text size
-            bbox = draw.textbbox((0, 0), label, font=font)
-            text_width = bbox[2] - bbox[0]
-            text_height = bbox[3] - bbox[1]
-            
-            # Draw label background
-            draw.rectangle([(x1, y1 - text_height - 10), (x1 + text_width, y1)], 
-                         fill=(0, 255, 0))
-            
-            # Draw label text
-            draw.text((x1, y1 - text_height - 8), label, fill=(255, 255, 255), font=font)
+            label_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)[0]
+            cv2.rectangle(img_bgr, (x1, y1 - label_size[1] - 10), 
+                         (x1 + label_size[0], y1), (0, 255, 0), -1)
+            cv2.putText(img_bgr, label, (x1, y1 - 5), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
     
-    return img_pil, results
+    # Convert back to RGB for display
+    img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+    
+    return img_rgb, results
 
 
 def main():
@@ -138,7 +128,7 @@ def main():
                 
                 # Display original
                 st.subheader("Original Image")
-                st.image(image, width=640)
+                st.image(image, use_column_width=True)
                 
                 # Process
                 with st.spinner("Processing..."):
@@ -148,7 +138,7 @@ def main():
                 
                 # Display processed
                 st.subheader("Detection Result")
-                st.image(processed_img, width=640)
+                st.image(processed_img, use_column_width=True)
                 
                 # Display results
                 st.subheader("Detection Details")
@@ -172,8 +162,71 @@ def main():
         
         else:  # Webcam
             st.subheader("Webcam Detection")
-            st.warning("⚠️ Webcam is not available on Streamlit Cloud. Please use 'Upload Image' option instead.")
-            st.info("For webcam detection, run this app locally with: streamlit run app.py")
+            st.info("Click 'Start Webcam' to begin live detection")
+            
+            if st.button("Start Webcam"):
+                # Initialize webcam
+                cap = cv2.VideoCapture(0)
+                
+                if not cap.isOpened():
+                    st.error("Could not open webcam. Please check your camera.")
+                    return
+                
+                st_frame = st.empty()
+                stop_button = st.button("Stop Webcam")
+                
+                fps_counter = 0
+                fps_start_time = time.time()
+                
+                while not stop_button:
+                    ret, frame = cap.read()
+                    if not ret:
+                        st.error("Failed to read frame")
+                        break
+                    
+                    # Convert to PIL
+                    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    image = Image.fromarray(frame_rgb)
+                    
+                    # Process
+                    start_time = time.time()
+                    processed_img, results = process_image(image, model)
+                    inference_time = (time.time() - start_time) * 1000
+                    
+                    # Calculate FPS
+                    fps_counter += 1
+                    if time.time() - fps_start_time >= 1.0:
+                        fps = fps_counter
+                        fps_counter = 0
+                        fps_start_time = time.time()
+                    else:
+                        fps = fps_counter / (time.time() - fps_start_time + 0.001)
+                    
+                    # Display
+                    st_frame.image(processed_img, channels="RGB", use_column_width=True)
+                    
+                    # Display info
+                    col_info1, col_info2, col_info3 = st.columns(3)
+                    with col_info1:
+                        st.metric("FPS", f"{fps:.1f}")
+                    with col_info2:
+                        st.metric("Latency", f"{inference_time:.1f} ms")
+                    with col_info3:
+                        if len(results[0].boxes) > 0:
+                            class_id = int(results[0].boxes[0].cls[0])
+                            confidence = float(results[0].boxes[0].conf[0])
+                            class_name = model.names[class_id]
+                            st.metric("Detected", f"{class_name} ({confidence:.2f})")
+                        else:
+                            st.metric("Detected", "None")
+                    
+                    # Check for stop
+                    if stop_button:
+                        cap.release()
+                        st.success("Webcam stopped")
+                        break
+                
+                cap.release()
     
     with col2:
         st.header("About")
@@ -205,3 +258,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
