@@ -22,9 +22,3 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
-
-# Data directories
-chroma_db/
-data/
-hf_cache/
-model_cache/
