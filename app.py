@@ -80,57 +80,32 @@ if input_method == "Upload Image":
 
 else:
     st.subheader("Webcam Detection")
-    if st.button("Start Webcam"):
-        cap = cv2.VideoCapture(0)
-        if not cap.isOpened():
-            st.error("Could not open webcam. Please check your camera.")
-        else:
-            st_frame = st.empty()
-            stop_button = st.button("Stop Webcam")
-            fps_counter = 0
-            fps_start_time = time.time()
-            
-            while not stop_button:
-                ret, frame = cap.read()
-                if not ret:
-                    st.error("Failed to read frame")
-                    break
-                
-                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                image = Image.fromarray(frame_rgb)
-                
-                start_time = time.time()
-                processed_img, results = process_image(image, model)
-                inference_time = (time.time() - start_time) * 1000
-                
-                fps_counter += 1
-                if time.time() - fps_start_time >= 1.0:
-                    fps = fps_counter
-                    fps_counter = 0
-                    fps_start_time = time.time()
-                else:
-                    fps = fps_counter / (time.time() - fps_start_time + 0.001)
-                
-                st_frame.image(processed_img, channels="RGB", use_column_width=True)
-                
-                col_info1, col_info2, col_info3 = st.columns(3)
-                with col_info1:
-                    st.metric("FPS", f"{fps:.1f}")
-                with col_info2:
-                    st.metric("Latency", f"{inference_time:.1f} ms")
-                with col_info3:
-                    if len(results[0].boxes) > 0:
-                        class_id = int(results[0].boxes[0].cls[0])
-                        confidence = float(results[0].boxes[0].conf[0])
-                        class_name = model.names[class_id]
-                        st.metric("Detected", f"{class_name} ({confidence:.2f})")
-                    else:
-                        st.metric("Detected", "None")
-                
-                if stop_button:
-                    cap.release()
-                    st.success("Webcam stopped")
-                    break
-            
-            cap.release()
-
+    st.info("Use the camera button below to capture a photo for detection")
+    camera_image = st.camera_input("Capture photo")
+    
+    if camera_image:
+        image = Image.open(camera_image)
+        
+        with st.spinner("Processing..."):
+            start_time = time.time()
+            processed_img, results = process_image(image, model)
+            inference_time = (time.time() - start_time) * 1000
+        
+        st.subheader("Detection Result")
+        st.image(processed_img, use_column_width=True)
+        
+        for result in results:
+            if len(result.boxes) > 0:
+                for box in result.boxes:
+                    class_id = int(box.cls[0])
+                    confidence = float(box.conf[0])
+                    class_name = model.names[class_id]
+                    st.success(f"Detected: {class_name} (Confidence: {confidence:.2f})")
+            else:
+                st.warning("No ASL sign detected")
+        
+        col_m1, col_m2 = st.columns(2)
+        with col_m1:
+            st.metric("Inference Time", f"{inference_time:.2f} ms")
+        with col_m2:
+            st.metric("FPS", f"{1000/inference_time:.1f}")
