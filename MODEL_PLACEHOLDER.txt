@@ -1,0 +1,10 @@
+# Model File Placeholder
+
+Place your trained YOLOv8 model file (best.pt) in this directory before deploying.
+
+To get a trained model:
+1. Train the model using the main project: python train.py --model_size n --epochs 100
+2. Copy the model from: runs/detect/asl_yolov8_n_*/weights/best.pt
+3. Paste it here as: best.pt
+
+Alternatively, you can upload the model through the Streamlit app interface.
