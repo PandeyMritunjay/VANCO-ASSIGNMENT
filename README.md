@@ -1,5 +1,49 @@
 # RAG Application - Architecture & Limitations
- 
+
+## Local Setup
+
+To run this application locally:
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/PandeyMritunjay/VANCO-ASSIGNMENT.git
+   cd VANCO-ASSIGNMENT/streamlit_deploy
+   ```
+
+2. **Create virtual environment**
+   ```bash
+   python -m venv .venv
+   .venv\Scripts\activate  # Windows
+   # or
+   source .venv/bin/activate  # Linux/Mac
+   ```
+
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Configure environment variables**
+   - Copy `.env.example` to `.env`
+   - Set `NVIDIA_API_KEY` to your NVIDIA API key
+   - Set `NVIDIA_BASE_URL` to `https://integrate.api.nvidia.com/v1`
+   - Set `NVIDIA_MODEL` to `meta/llama-3.1-8b-instruct`
+
+5. **Run ingestion (first time only)**
+   ```bash
+   python ingest.py
+   ```
+   This downloads the NCERT Physics PDF and populates the vector database.
+
+6. **Start the Streamlit app**
+   ```bash
+   streamlit run streamlit_app.py
+   ```
+
+The app will be available at `http://localhost:8501`.
+
+---
+
 ## Architecture Diagram
  
 The system uses a hybrid retrieval approach combining multiple search methods:
